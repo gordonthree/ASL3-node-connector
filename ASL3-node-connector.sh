@@ -21,9 +21,9 @@
 NODE=12345 # Replace this with your own node number!
 TARGET=12345 # Replace this with the target node you're connecting to! 
 IDLE_LIMIT=300  # Seconds of idle time before your node disconnects from target node
-AUDIO_PATH="/var/lib/asterisk/sounds" # Path for where the audio files are stored
+AUDIO_PATH="/var/lib/asterisk/sounds/custom" # Path for where the audio files are stored
 CONNECT_ANNOUNCE="link-generic-announcement" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
-CONNECT_ANNOUNCE_TIME=9 # This is the amount of time your connect announcement is, in seconds
+CONNECT_ANNOUNCE_TIME=9 # This is the amount of time your connect announcement WAV file is, in seconds
 DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
 
 ### A NOTE ON WAV FILE ANNOUNCEMENTS ###
