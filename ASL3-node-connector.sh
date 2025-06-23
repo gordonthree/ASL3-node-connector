@@ -30,7 +30,8 @@ DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # Replace this with your d
 # They must be 128kb/s 8000Hz mono WAV files
 # Run the following command from the Asterisk CLI to test that the WAV file works:
 # "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]
-# Do not include the ".wav" from the filefame in the command
+
+### DO NOT INCLUDE the ".wav" from the filefame in the commands or in the settings above ###
 
 # Play connection announcement and then connect to the target node after announcement finishes
 asterisk -rx "rpt playback $NODE $AUDIO_PATH$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
