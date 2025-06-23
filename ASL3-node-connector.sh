@@ -17,27 +17,26 @@
 
 #!/bin/bash
 
-NODE=12345 # Replace this with your number number!
+### Settings ###
+NODE=12345 # Replace this with your own node number!
 TARGET=12345 # Replace this with the target node you're connecting to! 
-IDLE_LIMIT=300  # seconds of idle time before your node disconnects from target node
+IDLE_LIMIT=300  # Seconds of idle time before your node disconnects from target node
 CONNECT_ANNOUNCE="WMEC-con-proper" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
 DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect anouncement WAV file
 
-# Play connection announcement and then connect to the target node after announcement finishes
+### Play connection announcement and then connect to the target node after announcement finishes
 asterisk -rx "rpt playback $NODE /var/lib/asterisk/sounds/custom/$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
 sleep $CONNECT_ANNOUNCE_TIME # Comment out if no connect announcement
 asterisk -rx "rpt fun $NODE *3$TARGET"
 sleep 3  # Give it a moment to fully connect
 
-# Timestamp of last activity
-LAST_ACTIVITY=$(date +%s)
+LAST_ACTIVITY=$(date +%s) # Timestamp of last activity
 
 while true; do
     ACTIVITY=$(asterisk -rx "rpt stats $NODE" | grep -i "lastnode")
 
     if echo "$ACTIVITY" | grep -q "$TARGET"; then
-        # Reset timer if traffic detected
-        LAST_ACTIVITY=$(date +%s)
+        LAST_ACTIVITY=$(date +%s) # Reset timer if traffic detected
     fi
 
     CURRENT_TIME=$(date +%s)
