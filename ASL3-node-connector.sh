@@ -25,8 +25,8 @@ CONNECT_ANNOUNCE="WMEC-con-proper" # Replace this with your connection announcem
 CONNECT_ANNOUNCE_TIME=17 # This is the amount of time your connect announcement is, in seconds
 DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
 
-### A note on the WAV files ###
-# They must be WAV, 128kb/s, 8000Hz, mono WAV files
+### A NOTE ON WAV FILE ANNOUNCEMENTS ###
+# They must be 128kb/s 8000Hz mono WAV files
 # Run the following command from the Asterisk CLI to test that the WAV file works:
 # "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]
 # Do not include the ".wav" from the filefame in the command
