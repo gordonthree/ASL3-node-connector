@@ -11,4 +11,4 @@
    * Example: ```58 19 * * 3 /usr/local/bin/ASL3-node-connector.sh &```
 
  * Run the 10 minute announcement command via crontab set 10 minutes before connector script is ran:
-   * Example: ```48 19 * * 3 /usr/sbin/asterisk -rx "rpt playback [your node number] /var/lib/asterisk/sounds/10-min-generic-announcement```
+   * Example: ```48 19 * * 3 /usr/sbin/asterisk -rx "rpt playback [your node number] /var/lib/asterisk/sounds/10-min-generic-announcement"```
