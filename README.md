@@ -3,7 +3,7 @@
  ## Setup
  * Download ```ASL-node-connector.sh``` to ```/usr/local/bin```
 
- * Download audio files to: ```/var/lib/asterisk/sounds/``` (optional)
+ * Download audio files to: ```/var/lib/asterisk/sounds/custom``` (optional)
 
  * Setup the shell script by editing the .sh file: ```sudo nano /usr/local/sbin/ASL3-node-connector.sh```
 
