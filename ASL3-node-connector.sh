@@ -1,5 +1,9 @@
+#!/bin/bash
+##############################
+
 # ASL3 node connector script
 # By Goose - N8GMZ - 2025
+
 ###############################
 
 # This script will connect your AllStarLink3 node to another node and disconnect after a period of inactivity on the node.
@@ -10,21 +14,24 @@
 ###############################
 
 # Add this script to crontab for automated scheduling
-# Example: 58 19 * * 3 /usr/local/bin/ASL3-node-connector.sh &
-# This example connects your node to another node at 7:58PM on Wednesdays
+# Example: "58 19 * * 3 /usr/local/bin/ASL3-node-connector.sh &"
+# This example connects your node to another node at 7:58PM (1958 hours) on Wednesdays (3)
 
-###############################
-
-#!/bin/bash
-
-### Settings ###
+### SETTINGS ####
 NODE=12345 # Replace this with your own node number!
 TARGET=12345 # Replace this with the target node you're connecting to! 
 IDLE_LIMIT=300  # Seconds of idle time before your node disconnects from target node
 CONNECT_ANNOUNCE="WMEC-con-proper" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
-DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect anouncement WAV file
+CONNECT_ANNOUNCE_TIME=17 # This is the amount of time your connect announcement is, in seconds
+DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
 
-### Play connection announcement and then connect to the target node after announcement finishes
+### A note on the WAV files ###
+# They must be WAV, 128kb/s, 8000Hz, mono WAV files
+# Run the following command from the Asterisk CLI to test that the WAV file works:
+# "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]
+# Do not include the ".wav" from the filefame in the command
+
+# Play connection announcement and then connect to the target node after announcement finishes
 asterisk -rx "rpt playback $NODE /var/lib/asterisk/sounds/custom/$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
 sleep $CONNECT_ANNOUNCE_TIME # Comment out if no connect announcement
 asterisk -rx "rpt fun $NODE *3$TARGET"
