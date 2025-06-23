@@ -21,9 +21,10 @@
 NODE=12345 # Replace this with your own node number!
 TARGET=12345 # Replace this with the target node you're connecting to! 
 IDLE_LIMIT=300  # Seconds of idle time before your node disconnects from target node
-CONNECT_ANNOUNCE="WMEC-con-proper" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
-CONNECT_ANNOUNCE_TIME=17 # This is the amount of time your connect announcement is, in seconds
-DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
+AUDIO_PATH="/var/lib/asterisk/sounds" # Path for where the audio files are stored
+CONNECT_ANNOUNCE="link-generic-announcement" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
+CONNECT_ANNOUNCE_TIME=9 # This is the amount of time your connect announcement is, in seconds
+DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
 
 ### A NOTE ON WAV FILE ANNOUNCEMENTS ###
 # They must be 128kb/s 8000Hz mono WAV files
@@ -32,7 +33,7 @@ DISCONNECT_ANNOUNCE="WMEC-discon-proper" # Replace this with your disconnect ano
 # Do not include the ".wav" from the filefame in the command
 
 # Play connection announcement and then connect to the target node after announcement finishes
-asterisk -rx "rpt playback $NODE /var/lib/asterisk/sounds/custom/$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
+asterisk -rx "rpt playback $NODE $AUDIO_PATH$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
 sleep $CONNECT_ANNOUNCE_TIME # Comment out if no connect announcement
 asterisk -rx "rpt fun $NODE *3$TARGET"
 sleep 3  # Give it a moment to fully connect
@@ -52,7 +53,7 @@ while true; do
     if [ $IDLE_TIME -ge $IDLE_LIMIT ]; then
         asterisk -rx "rpt fun $NODE *1$TARGET" # Disconnects from node
         sleep 3 # Comment out if no exit announcement
-        asterisk -rx "rpt playback $NODE /var/lib/asterisk/sounds/custom/$DISCONNECT_ANNOUNCE" #Comment out if no exit announcement
+        asterisk -rx "rpt playback $NODE $AUDIO_PATH$DISCONNECT_ANNOUNCE" #Comment out if no exit announcement
         exit 0
     fi
 
