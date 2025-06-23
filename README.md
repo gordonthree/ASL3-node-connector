@@ -1,5 +1,5 @@
  # ASL-node-connector
- This assumes you have a working instance of ASL3 running already.
+ This assumes you have a working instance of AllStarLink 3 running already.
  ## Setup
  * Download ```ASL-node-connector.sh``` to ```/usr/local/bin```
 
