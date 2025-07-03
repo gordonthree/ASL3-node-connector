@@ -13,4 +13,6 @@
  * Run the 10 minute announcement command via crontab set 10 minutes before connector script is ran:
    * Example: ```48 19 * * 3 /usr/sbin/asterisk -rx "rpt playback [your node number] /var/lib/asterisk/sounds/10-min-generic-announcement"```
   
-  * Don't forget to give the shell script permission to execute ```chmod +x /usr/local/bin/ASL3-node-connector.sh``` 
+  * Don't forget to give the shell script permission to execute ```chmod +x /usr/local/bin/ASL3-node-connector.sh```
+  * Then give Asterisk ownership of the sound files ```chown -R asterisk:asterisk /var/lib/asterisk/sounds/custom/```
+  * And read permissions ```chmod -R 644 /var/lib/asterisk/sounds/custom/```
