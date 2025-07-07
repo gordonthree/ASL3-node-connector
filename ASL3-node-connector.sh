@@ -1,64 +1,91 @@
 #!/bin/bash
-##############################
+set -euo pipefail
 
-# ASL3 node connector script
+#############################################
+# ASL3 Node Connector Script
 # By Goose - N8GMZ - 2025
-
-###############################
-
-# This script will connect your AllStarLink3 node to another node and disconnect after a period of inactivity on the node.
-# It was made to connect to nets and disconnect after there is no activity, when the net is complete.
-# This code is protected under the MIT license
 # https://github.com/GooseThings/ASL3-node-connector/
+#############################################
 
-###############################
+# --- CONFIGURABLE SETTINGS ---
+NODE=64549
+TARGET=29972
+IDLE_LIMIT=120  # seconds
+AUDIO_PATH="/var/lib/asterisk/sounds/custom"
 
-# Add this script to crontab for automated scheduling
-# Example: "58 19 * * 3 /usr/local/bin/ASL3-node-connector.sh &"
-# This example connects your node to another node at 7:58PM (1958 hours) on Wednesdays (3)
+EARLY_ANNOUNCE="WMEC-10min-proper"
+EARLY_TIME=600
 
-### SETTINGS ####
-NODE=12345 # Replace this with your own node number!
-TARGET=12345 # Replace this with the target node you're connecting to! 
-IDLE_LIMIT=300  # Seconds of idle time before your node disconnects from target node
-AUDIO_PATH="/var/lib/asterisk/sounds/custom" # Path for where the audio files are stored
-CONNECT_ANNOUNCE="link-generic-announcement" # Replace this with your connection announcement WAV file stored in /var/lib/asterisk/sounds/custom
-CONNECT_ANNOUNCE_TIME=9 # This is the amount of time your connect announcement WAV file is, in seconds
-DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # Replace this with your disconnect anouncement WAV file stored in /var/lib/asterisk/sounds/custom
+CONNECT_ANNOUNCE="WMEC-con-proper"
+CONNECT_ANNOUNCE_TIME=20
 
-### A NOTE ON WAV FILE ANNOUNCEMENTS ###
-# They must be 128kb/s 8000Hz mono WAV files
-# Run the following command from the Asterisk CLI to test that the WAV file works:
-# "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]" (do not include the .wav extension, it is assumed)
+DISCONNECT_ANNOUNCE="WMEC-discon-proper"
+LOGFILE="/var/log/ASL3-node-connector.log"
+# -----------------------------
 
-### Again, DO NOT INCLUDE the ".wav" from the filefame in the commands or in the settings above ###
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" | tee -a "$LOGFILE"; }
+play() { asterisk -rx "rpt playback $NODE $1"; }
 
-# Play connection announcement and then connect to the target node after announcement finishes
-asterisk -rx "rpt playback $NODE $AUDIO_PATH$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
-sleep $CONNECT_ANNOUNCE_TIME # Comment out if no connect announcement
-asterisk -rx "rpt fun $NODE *3$TARGET"
-sleep 3  # Give it a moment to fully connect
+# --- STEP 1: Early announcement (after idle) ---
+log "Waiting for repeater to be idle before early announcement..."
+while :; do
+    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=${RXKEYED:-1}
+    if [[ "$RXKEYED" == 0 ]]; then
+        log "Repeater idle. Playing early announcement."
+        play "$AUDIO_PATH/$EARLY_ANNOUNCE"
+        break
+    fi
+    log "Repeater busy (RXKEYED=$RXKEYED). Rechecking in 30s..."
+    sleep 30
+done
 
-LAST_ACTIVITY=$(date +%s) # Timestamp of last activity
+sleep "$EARLY_TIME"
 
-while true; do
-    RXKEYED=$(asterisk -rx "rpt show variables $NODE" | grep RPT_RXKEYED | awk -F= '{print $2}' | tr -d '\r')
-    RXKEYED=${RXKEYED:-0}  # Fail-safe default: assume idle
+# --- STEP 2: Connect after idle ---
+log "Waiting for repeater to be idle before connect announcement..."
+while :; do
+    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=${RXKEYED:-1}
+    if [[ "$RXKEYED" == 0 ]]; then
+        log "Repeater idle. Playing connect announcement."
+        play "$AUDIO_PATH/$CONNECT_ANNOUNCE"
+        sleep "$CONNECT_ANNOUNCE_TIME"
+        log "Connecting to node $TARGET..."
+        asterisk -rx "rpt fun $NODE *3$TARGET"
+        break
+    fi
+    log "Repeater busy (RXKEYED=$RXKEYED). Rechecking in 5s..."
+    sleep 5
+done
 
-    if [ "$RXKEYED" -eq "1" ]; then
-        LAST_ACTIVITY=$(date +%s)
-        echo "$(date): Activity detected (RXKEYED=1), timer reset."
+sleep 300  # Allow net to get started before idle monitoring
+
+# --- STEP 3: Monitor for idle activity ---
+log "Monitoring for idle time (limit: $IDLE_LIMIT seconds)..."
+LAST_ACTIVITY=$(date +%s)
+
+while :; do
+    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=${RXKEYED:-1}
+    CURRENT_TIME=$(date +%s)
+
+    if [[ "$RXKEYED" == 1 ]]; then
+        LAST_ACTIVITY=$CURRENT_TIME
+        log "Activity detected. Timer reset."
+    else
+        IDLE_TIME=$((CURRENT_TIME - LAST_ACTIVITY))
+        log "Idle time: $IDLE_TIME seconds."
     fi
 
-    CURRENT_TIME=$(date +%s)
-    IDLE_TIME=$((CURRENT_TIME - LAST_ACTIVITY))
-
-    if [ "$IDLE_TIME" -ge "$IDLE_LIMIT" ]; then
-        asterisk -rx "rpt fun $NODE *1$TARGET" # Disconnects from node
-        sleep 3 # Comment out if no exit announcement
-        asterisk -rx "rpt playback $NODE $AUDIO_PATH$DISCONNECT_ANNOUNCE" #Comment out if no exit announcement
+    if (( CURRENT_TIME - LAST_ACTIVITY >= IDLE_LIMIT )); then
+        log "Idle time exceeded. Disconnecting from node $TARGET..."
+        asterisk -rx "rpt fun $NODE *1$TARGET"
+        sleep 3
+        play "$AUDIO_PATH/$DISCONNECT_ANNOUNCE"
+        log "Disconnected from node $TARGET. Exiting."
         exit 0
     fi
 
-    sleep 30  # check every 30 seconds
+    sleep 30
 done
