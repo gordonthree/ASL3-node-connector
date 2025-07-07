@@ -29,9 +29,9 @@ DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # Replace this with your d
 ### A NOTE ON WAV FILE ANNOUNCEMENTS ###
 # They must be 128kb/s 8000Hz mono WAV files
 # Run the following command from the Asterisk CLI to test that the WAV file works:
-# "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]
+# "rpt -rx localplay [your node #] /var/lib/asterisk/sounds/custom/[Your WAV file]" (do not include the .wav extension, it is assumed)
 
-### DO NOT INCLUDE the ".wav" from the filefame in the commands or in the settings above ###
+### Again, DO NOT INCLUDE the ".wav" from the filefame in the commands or in the settings above ###
 
 # Play connection announcement and then connect to the target node after announcement finishes
 asterisk -rx "rpt playback $NODE $AUDIO_PATH$CONNECT_ANNOUNCE" # Comment out this line if no connect announcement
@@ -42,16 +42,18 @@ sleep 3  # Give it a moment to fully connect
 LAST_ACTIVITY=$(date +%s) # Timestamp of last activity
 
 while true; do
-    ACTIVITY=$(asterisk -rx "rpt stats $NODE" | grep -i "lastnode")
+    RXKEYED=$(asterisk -rx "rpt show variables $NODE" | grep RPT_RXKEYED | awk -F= '{print $2}' | tr -d '\r')
+    RXKEYED=${RXKEYED:-0}  # Fail-safe default: assume idle
 
-    if echo "$ACTIVITY" | grep -q "$TARGET"; then
-        LAST_ACTIVITY=$(date +%s) # Reset timer if traffic detected
+    if [ "$RXKEYED" -eq "1" ]; then
+        LAST_ACTIVITY=$(date +%s)
+        echo "$(date): Activity detected (RXKEYED=1), timer reset."
     fi
 
     CURRENT_TIME=$(date +%s)
     IDLE_TIME=$((CURRENT_TIME - LAST_ACTIVITY))
 
-    if [ $IDLE_TIME -ge $IDLE_LIMIT ]; then
+    if [ "$IDLE_TIME" -ge "$IDLE_LIMIT" ]; then
         asterisk -rx "rpt fun $NODE *1$TARGET" # Disconnects from node
         sleep 3 # Comment out if no exit announcement
         asterisk -rx "rpt playback $NODE $AUDIO_PATH$DISCONNECT_ANNOUNCE" #Comment out if no exit announcement
