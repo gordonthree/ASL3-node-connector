@@ -10,7 +10,7 @@ set -euo pipefail
 # --- CONFIGURABLE SETTINGS ---
 NODE=64549
 TARGET=29972
-IDLE_LIMIT=120  # seconds
+IDLE_LIMIT=60  # seconds
 AUDIO_PATH="/var/lib/asterisk/sounds/custom"
 
 EARLY_ANNOUNCE="WMEC-10min-proper"
@@ -29,7 +29,7 @@ play() { asterisk -rx "rpt playback $NODE $1"; }
 # --- STEP 1: Early announcement (after idle) ---
 log "Waiting for repeater to be idle before early announcement..."
 while :; do
-    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=$(asterisk -rx "rpt show variables $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
     RXKEYED=${RXKEYED:-1}
     if [[ "$RXKEYED" == 0 ]]; then
         log "Repeater idle. Playing early announcement."
@@ -45,7 +45,7 @@ sleep "$EARLY_TIME"
 # --- STEP 2: Connect after idle ---
 log "Waiting for repeater to be idle before connect announcement..."
 while :; do
-    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=$(asterisk -rx "rpt show variables $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
     RXKEYED=${RXKEYED:-1}
     if [[ "$RXKEYED" == 0 ]]; then
         log "Repeater idle. Playing connect announcement."
@@ -66,7 +66,7 @@ log "Monitoring for idle time (limit: $IDLE_LIMIT seconds)..."
 LAST_ACTIVITY=$(date +%s)
 
 while :; do
-    RXKEYED=$(asterisk -rx "rpt showvars $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
+    RXKEYED=$(asterisk -rx "rpt show variables $NODE" | awk -F= '/RPT_RXKEYED/{print $2}' | tr -d '\r')
     RXKEYED=${RXKEYED:-1}
     CURRENT_TIME=$(date +%s)
 
