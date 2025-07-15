@@ -13,14 +13,14 @@ TARGET=29972
 IDLE_LIMIT=60  # seconds
 AUDIO_PATH="/var/lib/asterisk/sounds/custom"
 
-EARLY_ANNOUNCE="WMEC-10min-proper"
-EARLY_TIME=600
+EARLY_ANNOUNCE="WMEC-10min-proper" # Put your 10 minute warning announcement here
+EARLY_TIME=600 # in seconds
 
-CONNECT_ANNOUNCE="WMEC-con-proper"
-CONNECT_ANNOUNCE_TIME=20
+CONNECT_ANNOUNCE="WMEC-con-proper" # connection announcement here
+CONNECT_ANNOUNCE_TIME=20 # this is the dwell time you need to play the whole announcement before linking the nodes so it doesn't play on the other node
 
-DISCONNECT_ANNOUNCE="WMEC-discon-proper"
-LOGFILE="/var/log/ASL3-node-connector.log"
+DISCONNECT_ANNOUNCE="WMEC-discon-proper" # This is the WAV file that plays when you've disconnected
+LOGFILE="/var/log/ASL3-node-connector.log" # Logs actions
 # -----------------------------
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" | tee -a "$LOGFILE"; }
