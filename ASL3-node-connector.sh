@@ -26,23 +26,30 @@ LOGFILE="/var/log/ASL3-node-connector.log" # action log file
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" | tee -a "$LOGFILE"; }
 play() { asterisk -rx "rpt playback $NODE $1"; }
 
+# Helper to get keyed values
+get_keyed_status() {
+    local output
+    output=$(asterisk -rx "rpt show variables $NODE")
+
+    RXKEYED=$(echo "$output" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
+    TXKEYED=$(echo "$output" | awk -F= '/RPT_TXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
+    
+    RXKEYED=${RXKEYED:-1}
+    TXKEYED=${TXKEYED:-1}
+
+    log "Parsed RXKEYED = '$RXKEYED', TXKEYED = '$TXKEYED'"
+}
+
 # --- STEP 1: Early announcement (after idle) ---
 log "Waiting for repeater to be idle before early announcement..."
 while :; do
-    OUTPUT=$(asterisk -rx "rpt show variables $NODE")
-    log "Raw Asterisk output: $OUTPUT"
-
-    RXKEYED=$(echo "$OUTPUT" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
-    RXKEYED=${RXKEYED:-1}
-    log "Parsed RXKEYED = '$RXKEYED'"
-
-    if [[ "$RXKEYED" == "0" ]]; then
+    get_keyed_status
+    if [[ "$RXKEYED" == "0" && "$TXKEYED" == "0" ]]; then
         log "Repeater idle. Playing early announcement."
         play "$AUDIO_PATH/$EARLY_ANNOUNCE"
         break
     fi
-
-    log "Repeater busy (RXKEYED=$RXKEYED). Rechecking in 30s..."
+    log "Repeater busy (RXKEYED=$RXKEYED, TXKEYED=$TXKEYED). Rechecking in 30s..."
     sleep 30
 done
 
@@ -51,12 +58,8 @@ sleep "$EARLY_TIME"
 # --- STEP 2: Connect after idle ---
 log "Waiting for repeater to be idle before connect announcement..."
 while :; do
-    OUTPUT=$(asterisk -rx "rpt show variables $NODE")
-    RXKEYED=$(echo "$OUTPUT" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
-    RXKEYED=${RXKEYED:-1}
-    log "Parsed RXKEYED = '$RXKEYED'"
-
-    if [[ "$RXKEYED" == "0" ]]; then
+    get_keyed_status
+    if [[ "$RXKEYED" == "0" && "$TXKEYED" == "0" ]]; then
         log "Repeater idle. Playing connect announcement."
         play "$AUDIO_PATH/$CONNECT_ANNOUNCE"
         sleep "$CONNECT_ANNOUNCE_TIME"
@@ -64,8 +67,7 @@ while :; do
         asterisk -rx "rpt fun $NODE *3$TARGET"
         break
     fi
-
-    log "Repeater busy (RXKEYED=$RXKEYED). Rechecking in 5s..."
+    log "Repeater busy (RXKEYED=$RXKEYED, TXKEYED=$TXKEYED). Rechecking in 5s..."
     sleep 5
 done
 
@@ -76,14 +78,12 @@ log "Monitoring for idle time (limit: $IDLE_LIMIT seconds)..."
 LAST_ACTIVITY=$(date +%s)
 
 while :; do
-    OUTPUT=$(asterisk -rx "rpt show variables $NODE")
-    RXKEYED=$(echo "$OUTPUT" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
-    RXKEYED=${RXKEYED:-1}
+    get_keyed_status
     CURRENT_TIME=$(date +%s)
 
-    if [[ "$RXKEYED" == "1" ]]; then
+    if [[ "$RXKEYED" == "1" || "$TXKEYED" == "1" ]]; then
         LAST_ACTIVITY=$CURRENT_TIME
-        log "Activity detected. Timer reset."
+        log "Activity detected (RX=$RXKEYED, TX=$TXKEYED). Timer reset."
     else
         IDLE_TIME=$((CURRENT_TIME - LAST_ACTIVITY))
         log "Idle time: $IDLE_TIME seconds."
