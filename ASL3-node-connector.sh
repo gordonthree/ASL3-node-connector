@@ -23,10 +23,30 @@ DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # announcement on disconne
 LOGFILE="/var/log/ASL3-node-connector.log" # action log file
 # -----------------------------
 
-log() { echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" | tee -a "$LOGFILE"; }
-play() { asterisk -rx "rpt playback $NODE $1"; }
+DRY_RUN=false
+if [[ "${1:-}" == "--dry-run" ]]; then
+    DRY_RUN=true
+    echo "🛠️  DRY RUN MODE ENABLED — no commands will be executed"
+fi
 
-# Helper to get keyed values
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S')  $*" | tee -a "$LOGFILE"; }
+
+run_asterisk_cmd() {
+    if $DRY_RUN; then
+        log "[DRY RUN] Would run: asterisk -rx \"$*\""
+    else
+        asterisk -rx "$@"
+    fi
+}
+
+play() {
+    if $DRY_RUN; then
+        log "[DRY RUN] Would play: $1"
+    else
+        asterisk -rx "rpt playback $NODE $1"
+    fi
+}
+
 get_keyed_status() {
     local output
     output=$(asterisk -rx "rpt show variables $NODE")
@@ -40,7 +60,7 @@ get_keyed_status() {
     log "Parsed RXKEYED = '$RXKEYED', TXKEYED = '$TXKEYED'"
 }
 
-# --- STEP 1: Early announcement (after idle) ---
+# --- STEP 1: Wait for repeater to be idle before early announcement ---
 log "Waiting for repeater to be idle before early announcement..."
 while :; do
     get_keyed_status
@@ -49,13 +69,13 @@ while :; do
         play "$AUDIO_PATH/$EARLY_ANNOUNCE"
         break
     fi
-    log "Repeater busy (RXKEYED=$RXKEYED, TXKEYED=$TXKEYED). Rechecking in 30s..."
+    log "Repeater busy. Rechecking in 30s..."
     sleep 30
 done
 
 sleep "$EARLY_TIME"
 
-# --- STEP 2: Connect after idle ---
+# --- STEP 2: Wait for repeater to be idle before connection ---
 log "Waiting for repeater to be idle before connect announcement..."
 while :; do
     get_keyed_status
@@ -64,16 +84,16 @@ while :; do
         play "$AUDIO_PATH/$CONNECT_ANNOUNCE"
         sleep "$CONNECT_ANNOUNCE_TIME"
         log "Connecting to node $TARGET..."
-        asterisk -rx "rpt fun $NODE *3$TARGET"
+        run_asterisk_cmd "rpt fun $NODE *3$TARGET"
         break
     fi
-    log "Repeater busy (RXKEYED=$RXKEYED, TXKEYED=$TXKEYED). Rechecking in 5s..."
+    log "Repeater busy. Rechecking in 5s..."
     sleep 5
 done
 
-sleep 300  # Allow net to get started before idle monitoring
+sleep 300  # Let net settle
 
-# --- STEP 3: Monitor for idle activity ---
+# --- STEP 3: Monitor for idle time ---
 log "Monitoring for idle time (limit: $IDLE_LIMIT seconds)..."
 LAST_ACTIVITY=$(date +%s)
 
@@ -83,7 +103,7 @@ while :; do
 
     if [[ "$RXKEYED" == "1" || "$TXKEYED" == "1" ]]; then
         LAST_ACTIVITY=$CURRENT_TIME
-        log "Activity detected (RX=$RXKEYED, TX=$TXKEYED). Timer reset."
+        log "Activity detected. Timer reset."
     else
         IDLE_TIME=$((CURRENT_TIME - LAST_ACTIVITY))
         log "Idle time: $IDLE_TIME seconds."
@@ -91,7 +111,7 @@ while :; do
 
     if (( CURRENT_TIME - LAST_ACTIVITY >= IDLE_LIMIT )); then
         log "Idle time exceeded. Disconnecting from node $TARGET..."
-        asterisk -rx "rpt fun $NODE *1$TARGET"
+        run_asterisk_cmd "rpt fun $NODE *1$TARGET"
         sleep 3
         play "$AUDIO_PATH/$DISCONNECT_ANNOUNCE"
         log "Disconnected from node $TARGET. Exiting."
