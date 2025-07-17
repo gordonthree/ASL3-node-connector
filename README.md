@@ -9,3 +9,5 @@
  * Don't forget to give the shell script permission to execute ```chmod +x /usr/local/bin/ASL3-node-connector.sh```
  * Then give Asterisk ownership of the sound files ```chown -R asterisk:asterisk /var/lib/asterisk/sounds/custom/```
  * And read permissions ```chmod -R 644 /var/lib/asterisk/sounds/custom/```
+ ## Dry Run
+ You can test that everything is working by running ```ASL3-node-connector.sh --dry-run``` then checking the log after in ```/var/log/ASL3-node-connector.log```
