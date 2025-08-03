@@ -1,7 +1,8 @@
  # ASL-node-connector
  This assumes you have a working instance of AllStarLink 3 running already.
  ## Setup
- * Download ```ASL-node-connector.sh``` to ```/usr/local/bin```
+ * Download ```ASL-node-connector.sh``` to ```/usr/local/bin``` or alternatively:
+ * ```git clone https://github.com/GooseThings/ASL3-node-connector.git```
  * Download audio files to: ```/var/lib/asterisk/sounds/custom``` (optional)
  * Setup the shell script by editing the .sh file: ```sudo nano /usr/local/sbin/ASL3-node-connector.sh```
  * Run automatically at certain times via crontab. The 10 minute warning/connect/disconnect announcements are all baked in to the shell script.
@@ -13,3 +14,5 @@
  * And read permissions ```chmod -R 644 /var/lib/asterisk/sounds/custom/```
  ## Dry Run
  You can test that everything is working by running ```ASL3-node-connector.sh --dry-run``` then checking the log after in ```/var/log/ASL3-node-connector.log```
+ 
+ It's recommended you adjust the times down for dry runs, unless you want it to take 10-12 minutes for it to complete.
