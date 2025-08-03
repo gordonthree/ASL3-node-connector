@@ -56,7 +56,10 @@ get_keyed_status() {
 
     RXKEYED=$(echo "$output" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
     TXKEYED=$(echo "$output" | awk -F= '/RPT_TXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
-    
+
+    RXKEYED=$(echo "$RXKEYED" | tr -d '\r\n[:space:]')
+    TXKEYED=$(echo "$TXKEYED" | tr -d '\r\n[:space:]')
+
     RXKEYED=${RXKEYED:-1}
     TXKEYED=${TXKEYED:-1}
 
@@ -72,8 +75,8 @@ while :; do
         play "$AUDIO_PATH/$EARLY_ANNOUNCE"
         break
     fi
-    log "Repeater busy. Rechecking in 30s..."
-    sleep 30
+    log "Repeater busy. Rechecking in 20s..."
+    sleep 20
 done
 
 sleep "$EARLY_TIME"
@@ -90,8 +93,8 @@ while :; do
         run_asterisk_cmd "rpt fun $NODE *13$TARGET"
         break
     fi
-    log "Repeater busy. Rechecking in 5s..."
-    sleep 5
+    log "Repeater busy. Rechecking in 10s..."
+    sleep 10
 done
 
 sleep 300  # Let net settle
@@ -121,5 +124,5 @@ while :; do
         exit 0
     fi
 
-    sleep 30
+    sleep 20
 done
