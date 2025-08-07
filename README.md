@@ -1,3 +1,5 @@
+ # NOTE: ASLNC has a bug
+ * 08/07/2025 - The current version is hanging and going into a infinite loop. Working on a fix. Download at your own risk right now.
  # ASL-node-connector
  This assumes you have a working instance of AllStarLink 3 running already.
  ## Setup
