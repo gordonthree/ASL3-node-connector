@@ -4,6 +4,7 @@ set -euo pipefail
 #############################################
 # ASL3 Node Connector Script
 # By Goose - N8GMZ - 2025
+# Modified Aug 2025 Gordon K8DIY
 # https://github.com/GooseThings/ASL3-node-connector/
 #############################################
 
@@ -25,6 +26,8 @@ CONNECT_ANNOUNCE_TIME=20 # how long the announcement is (in seconds).
 DISCONNECT_ANNOUNCE="NBC" # announcement after disconnect
 LOGFILE="/var/log/ASL3-node-connector.log" # action log file
 # -----------------------------
+
+# added full path for the asterisk binary 
 
 DRY_RUN=false
 if [[ "${1:-}" == "--dry-run" ]]; then
@@ -65,6 +68,10 @@ get_keyed_status() {
 
     log "Parsed RXKEYED = '$RXKEYED', TXKEYED = '$TXKEYED'"
 }
+
+# it might be safer / cleaner to implement these steps as command line arguments, rather than relying
+# on sleep and a long running script in the background. cron could call the script with arguments
+# such as announce, connect, disconnect 
 
 # --- STEP 1: Wait for repeater to be idle before early announcement ---
 log "Waiting for repeater to be idle before early announcement..."
