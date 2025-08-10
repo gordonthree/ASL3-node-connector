@@ -8,21 +8,21 @@ set -euo pipefail
 #############################################
 
 # --- CONFIGURABLE SETTINGS ---
-NODE=64549 # This is your node that this is installed on
-TARGET=29972 # This is the node you want to automatically connect to
+NODE=45524 # This is your node that this is installed on
+TARGET=1999 # This is the node you want to automatically connect to
 IDLE_LIMIT=60  # seconds of idle time on ASL node before disconnect
-AUDIO_PATH="/var/lib/asterisk/sounds/custom" # directory where the WAV files are stored (recommended you put them here)
+AUDIO_PATH="/var/lib/asterisk/sounds" # directory where the WAV files are stored (recommended you put them here)
 
-EARLY_ANNOUNCE="10-min-generic-announcement" # Put your 10 minute warning announcement here
-EARLY_TIME=600 # The 10 minute announcement plays, and then it will wait this amount of time before connecting (in seconds)
+EARLY_ANNOUNCE="Nextel" # Put your 10 minute warning announcement here
+EARLY_TIME=5 # The 10 minute announcement plays, and then it will wait this amount of time before connecting (in seconds)
 
-CONNECT_ANNOUNCE="link-generic-announcement" # connection announcement here
+CONNECT_ANNOUNCE="BlastOff" # connection announcement here
 CONNECT_ANNOUNCE_TIME=20 # how long the announcement is (in seconds).
    # This is a dwell time so you connect after the announcement
    # If you shorten this to less than the announcement, then node will connect to the other node
    # and you will hear the announcement on both nodes, which is bad.
 
-DISCONNECT_ANNOUNCE="disconnect-generic-announcement" # announcement after disconnect
+DISCONNECT_ANNOUNCE="NBC" # announcement after disconnect
 LOGFILE="/var/log/ASL3-node-connector.log" # action log file
 # -----------------------------
 
@@ -38,7 +38,7 @@ run_asterisk_cmd() {
     if $DRY_RUN; then
         log "[DRY RUN] Would run: asterisk -rx \"$*\""
     else
-        asterisk -rx "$@"
+        /usr/sbin/asterisk -rx "$@"
     fi
 }
 
@@ -46,13 +46,13 @@ play() {
     if $DRY_RUN; then
         log "[DRY RUN] Would play: $1"
     else
-        asterisk -rx "rpt playback $NODE $1"
+        /usr/sbin/asterisk -rx "rpt playback $NODE $1"
     fi
 }
 
 get_keyed_status() {
     local output
-    output=$(asterisk -rx "rpt show variables $NODE")
+    output=$(/usr/sbin/asterisk -rx "rpt show variables $NODE")
 
     RXKEYED=$(echo "$output" | awk -F= '/RPT_RXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
     TXKEYED=$(echo "$output" | awk -F= '/RPT_TXKEYED/ {gsub(/^[ \t]+/, "", $2); print $2}')
@@ -76,7 +76,7 @@ while :; do
         break
     fi
     log "Repeater busy. Rechecking in 20s..."
-    sleep 20
+    sleep 5
 done
 
 sleep "$EARLY_TIME"
@@ -90,14 +90,14 @@ while :; do
         play "$AUDIO_PATH/$CONNECT_ANNOUNCE"
         sleep "$CONNECT_ANNOUNCE_TIME"
         log "Connecting to node $TARGET..."
-        run_asterisk_cmd "rpt fun $NODE *13$TARGET"
+        run_asterisk_cmd "rpt fun $NODE *3$TARGET"
         break
     fi
     log "Repeater busy. Rechecking in 10s..."
-    sleep 10
+    sleep 5
 done
 
-sleep 300  # Let net settle
+sleep 5  # Let net settle
 
 # --- STEP 3: Monitor for idle time ---
 log "Monitoring for idle time (limit: $IDLE_LIMIT seconds)..."
@@ -117,12 +117,12 @@ while :; do
 
     if (( CURRENT_TIME - LAST_ACTIVITY >= IDLE_LIMIT )); then
         log "Idle time exceeded. Disconnecting from node $TARGET..."
-        run_asterisk_cmd "rpt fun $NODE *14$TARGET"
+        run_asterisk_cmd "rpt fun $NODE *1$TARGET"
         sleep 3
         play "$AUDIO_PATH/$DISCONNECT_ANNOUNCE"
         log "Disconnected from node $TARGET. Exiting."
         exit 0
     fi
 
-    sleep 20
+    sleep 5
 done
